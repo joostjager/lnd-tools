@@ -2,18 +2,19 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 )
 
+// Usage: lncli listpayments | timingdiagram <hash> > out.html
+// If hash is not given, the first payment found will be used.
+
 func main() {
-	if len(os.Args) == 1 {
-		fmt.Println("Usage: lncli listpayments | timingdiagram <hash> > out.html")
-		return
+	var hash string
+	if len(os.Args) == 2 {
+		hash = os.Args[1]
 	}
 
-	hash := os.Args[1]
 	err := paymentTiming(hash)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
@@ -53,10 +54,6 @@ type PaymentsJson struct {
 }
 
 func paymentTiming(hash string) error {
-	if hash == "" {
-		return errors.New("no payment hash given")
-	}
-
 	var data PaymentsJson
 	decoder := json.NewDecoder(os.Stdin)
 	err := decoder.Decode(&data)
@@ -65,9 +62,11 @@ func paymentTiming(hash string) error {
 	}
 
 	for _, payment := range data.Payments {
-		if payment.PaymentHash == hash {
-			return paymentTimingDiagram(payment)
+		if hash != "" && payment.PaymentHash != hash {
+			continue
 		}
+
+		return paymentTimingDiagram(payment)
 	}
 
 	return nil
