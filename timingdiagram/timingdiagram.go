@@ -120,9 +120,9 @@ func paymentTimingDiagram(payment *PaymentJson) error {
 	var scale = (timeEnd - timeStart) / 1500
 
 	for _, h := range payment.Htlcs {
-		routeText := fmt.Sprintf("%v (%v) ", h.Route.Hops[0].PubKey, h.Route.Hops[0].ChanId)
+		routeText := fmt.Sprintf("%v (%v) ", h.Route.Hops[0].PubKey[:6], h.Route.Hops[0].ChanId)
 		for _, h := range h.Route.Hops[1:] {
-			routeText += " > " + h.PubKey
+			routeText += " > " + h.PubKey[:6]
 		}
 		text := fmt.Sprintf("%v sat (%v)", h.Route.TotalAmt, routeText)
 
