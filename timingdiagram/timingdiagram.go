@@ -137,18 +137,24 @@ func paymentTimingDiagram(payment *PaymentJson) error {
 		}
 
 		var background string
+		var settled bool
 		switch h.Status {
 		case "SUCCEEDED":
 			background = "green"
+			settled = true
 		case "FAILED":
 			background = "red"
 			text += fmt.Sprintf(": %v @ %v", h.Failure.Code, h.Failure.FailureSourceIndex)
 
 			if h.Failure.Code == "MPP_TIMEOUT" {
-				totalSettled[routeText] += h.Route.Hops[len(h.Route.Hops)-1].AmtToForward
+				settled = true
 			}
 		default:
 			background = "grey"
+		}
+
+		if settled {
+			totalSettled[routeText] += h.Route.Hops[len(h.Route.Hops)-1].AmtToForward
 		}
 
 		fmt.Printf("<div class=\"container\">")
