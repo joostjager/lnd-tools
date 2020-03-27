@@ -22,8 +22,9 @@ func main() {
 }
 
 type HopJson struct {
-	PubKey string `json:"pub_key"`
-	ChanId uint64 `json:"chan_id,string"`
+	PubKey       string `json:"pub_key"`
+	ChanId       uint64 `json:"chan_id,string"`
+	AmtToForward int64  `json:"amt_to_forward,string"`
 }
 
 type RouteJson struct {
@@ -119,6 +120,7 @@ func paymentTimingDiagram(payment *PaymentJson) error {
 
 	var scale = (timeEnd - timeStart) / 1500
 
+	totalSettled := make(map[string]int64)
 	for _, h := range payment.Htlcs {
 		routeText := fmt.Sprintf("%v (%v) ", h.Route.Hops[0].PubKey[:6], h.Route.Hops[0].ChanId)
 		for _, h := range h.Route.Hops[1:] {
@@ -141,6 +143,10 @@ func paymentTimingDiagram(payment *PaymentJson) error {
 		case "FAILED":
 			background = "red"
 			text += fmt.Sprintf(": %v @ %v", h.Failure.Code, h.Failure.FailureSourceIndex)
+
+			if h.Failure.Code == "MPP_TIMEOUT" {
+				totalSettled[routeText] += h.Route.Hops[len(h.Route.Hops)-1].AmtToForward
+			}
 		default:
 			background = "grey"
 		}
@@ -150,6 +156,14 @@ func paymentTimingDiagram(payment *PaymentJson) error {
 		fmt.Printf("<div class=\"htlc\" style=\"width:%vpx;background-color:%v;\"></div>", end-start, background)
 		fmt.Printf("<div class=\"text\"><p>%v</p></div></div>\n", text)
 	}
+
+	fmt.Printf("<br/><br/>")
+	var total int64
+	for route, settled := range totalSettled {
+		fmt.Printf("Settled via %v: %v sats<br/>\n", route, settled)
+		total += settled
+	}
+	fmt.Printf("<br/>Total settled: %v sats\n", total)
 
 	fmt.Println(`
 		</body>
