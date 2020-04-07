@@ -6,8 +6,15 @@ import (
 	"os"
 )
 
-// Usage: lncli listpayments | timingdiagram <hash> > out.html
-// If hash is not given, the first payment found will be used.
+// Usage 1: Visualize a completed payment retrospectively via the list payments
+// output:
+//
+// lncli listpayments | timingdiagram <hash> > out.html
+
+// Usage 2: Visualize a completed payment directly from payinvoice/sendpayment
+// output:
+//
+// lncli payinvoice <payreq> | timingdiagram > out.html
 
 func main() {
 	var hash string
@@ -55,22 +62,38 @@ type PaymentsJson struct {
 }
 
 func paymentTiming(hash string) error {
-	var data PaymentsJson
+	var payment *PaymentJson
 	decoder := json.NewDecoder(os.Stdin)
-	err := decoder.Decode(&data)
-	if err != nil {
-		return err
-	}
 
-	for _, payment := range data.Payments {
-		if hash != "" && payment.PaymentHash != hash {
-			continue
+	if hash == "" {
+		var p PaymentJson
+		err := decoder.Decode(&p)
+		if err != nil {
+			return err
+		}
+		payment = &p
+	} else {
+		var data PaymentsJson
+		err := decoder.Decode(&data)
+		if err != nil {
+			return err
 		}
 
-		return paymentTimingDiagram(payment)
+		for _, p := range data.Payments {
+			if p.PaymentHash != hash {
+				continue
+			}
+
+			payment = p
+			break
+		}
+
+		if payment == nil {
+			return fmt.Errorf("payment %v not found", hash)
+		}
 	}
 
-	return nil
+	return paymentTimingDiagram(payment)
 }
 
 func paymentTimingDiagram(payment *PaymentJson) error {
