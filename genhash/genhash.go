@@ -12,5 +12,5 @@ func main() {
 		return
 	}
 	hash := sha256.Sum256(preimage[:])
-	fmt.Printf("preimage: %x\nhash:     %x\n", preimage, hash)
+	fmt.Printf("{\n  \"preimage\": \"%x\",\n  \"hash\": \"%x\"\n}\n", preimage, hash)
 }
